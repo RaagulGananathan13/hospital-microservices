@@ -4,12 +4,18 @@ const createServiceProxy = (target, servicePrefix) =>
   createProxyMiddleware({
     target,
     changeOrigin: true,
+    xfwd: true,
     pathRewrite: { [`^${servicePrefix}`]: '' },
-    onProxyRes: (proxyRes) => {
-      const location = proxyRes.headers.location;
-      // Keep Swagger redirects under the gateway service prefix without duplicating it.
-      if (location && location.startsWith('/api-docs') && !location.startsWith(`${servicePrefix}/api-docs`)) {
-        proxyRes.headers.location = `${servicePrefix}${location}`;
+    on: {
+      proxyReq: (proxyReq) => {
+        proxyReq.setHeader('x-forwarded-prefix', servicePrefix);
+      },
+      proxyRes: (proxyRes) => {
+        const location = proxyRes.headers.location;
+        // Keep Swagger redirects under the gateway service prefix without duplicating it.
+        if (location && location.startsWith('/api-docs') && !location.startsWith(`${servicePrefix}/api-docs`)) {
+          proxyRes.headers.location = `${servicePrefix}${location}`;
+        }
       }
     }
   });

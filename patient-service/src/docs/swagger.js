@@ -2,25 +2,43 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-const options = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Patient Service API',
-      version: '1.0.0',
-      description: 'Patient microservice documentation for Hospital Management System'
+const getSwaggerSpec = (req) => {
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const forwardedPrefix = req.headers['x-forwarded-prefix'];
+  const directProto = req.protocol;
+  const directHost = req.get('host');
+
+  const servers = [{ url: `${directProto}://${directHost}`, description: 'Patient service direct URL' }];
+
+  if (forwardedHost && forwardedPrefix) {
+    const proxyProto = forwardedProto || directProto;
+    servers.unshift({
+      url: `${proxyProto}://${forwardedHost}${forwardedPrefix}`,
+      description: 'Patient service via API gateway'
+    });
+  }
+
+  return swaggerJsdoc({
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'Patient Service API',
+        version: '1.0.0',
+        description: 'Patient microservice documentation for Hospital Management System'
+      },
+      servers
     },
-    servers: [
-      { url: 'http://localhost:5001', description: 'Patient service direct URL' }
-    ]
-  },
-  apis: ['./src/routes/patientRoutes.js']
+    apis: ['./src/routes/patientRoutes.js']
+  });
 };
 
-const swaggerSpec = swaggerJsdoc(options);
-
 const setupSwagger = (app) => {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get('/api-docs.json', (req, res) => {
+    res.json(getSwaggerSpec(req));
+  });
+
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, false, {}, null, null, '../api-docs.json'));
 };
 
 module.exports = setupSwagger;
