@@ -1,5 +1,6 @@
 
 const doctorModel = require('../models/doctorModel');
+const pool = require('../config/db');
 
 const getAllDoctors = async (req, res) => {
   try {
@@ -44,12 +45,35 @@ const updateDoctor = async (req, res) => {
 };
 
 const deleteDoctor = async (req, res) => {
+  const doctorId = Number(req.params.id);
+  const connection = await pool.getConnection();
+
   try {
-    const deleted = await doctorModel.remove(req.params.id);
-    if (!deleted) return res.status(404).json({ success: false, message: 'Doctor not found' });
+    await connection.beginTransaction();
+
+    // Remove bills tied to this doctor's appointments before deleting appointments.
+    await connection.query(
+      `DELETE b FROM bills b
+       INNER JOIN appointments a ON b.appointment_id = a.id
+       WHERE a.doctor_id = ?`,
+      [doctorId]
+    );
+
+    await connection.query('DELETE FROM appointments WHERE doctor_id = ?', [doctorId]);
+
+    const [result] = await connection.query('DELETE FROM doctors WHERE id = ?', [doctorId]);
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+
+    await connection.commit();
     res.status(200).json({ success: true, message: 'Doctor deleted successfully' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };
 

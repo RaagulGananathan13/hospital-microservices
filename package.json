@@ -3,11 +3,15 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "dev": "echo [SUCCESS] Starting API Gateway and 4 services... && concurrently -n GATEWAY,PATIENT,DOCTOR,APPOINTMENT,BILLING -c cyan,green,blue,magenta,yellow \"npm run start:gateway\" \"npm run start:patient\" \"npm run start:doctor\" \"npm run start:appointment\" \"npm run start:billing\"",
     "install:all": "npm install && cd api-gateway && npm install && cd ../patient-service && npm install && cd ../doctor-service && npm install && cd ../appointment-service && npm install && cd ../billing-service && npm install",
     "start:gateway": "cd api-gateway && npm run dev",
     "start:patient": "cd patient-service && npm run dev",
     "start:doctor": "cd doctor-service && npm run dev",
     "start:appointment": "cd appointment-service && npm run dev",
     "start:billing": "cd billing-service && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

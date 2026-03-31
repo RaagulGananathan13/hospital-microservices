@@ -104,14 +104,28 @@ const updateAppointment = async (req, res) => {
 
 // DELETE
 const deleteAppointment = async (req, res) => {
+  const appointmentId = Number(req.params.id);
+  const connection = await pool.getConnection();
+
   try {
-    const deleted = await appointmentModel.remove(req.params.id);
-    if (!deleted)
+    await connection.beginTransaction();
+
+    await connection.query('DELETE FROM bills WHERE appointment_id = ?', [appointmentId]);
+
+    const [result] = await connection.query('DELETE FROM appointments WHERE id = ?', [appointmentId]);
+    if (result.affectedRows === 0) {
+      await connection.rollback();
       return res.status(404).json({ success: false, message: 'Appointment not found' });
+    }
+
+    await connection.commit();
 
     res.status(200).json({ success: true, message: 'Appointment deleted successfully' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };
 

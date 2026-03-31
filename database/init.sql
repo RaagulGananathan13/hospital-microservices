@@ -36,13 +36,13 @@ CREATE TABLE IF NOT EXISTS appointments (
     CONSTRAINT fk_appointment_patient
         FOREIGN KEY (patient_id)
         REFERENCES patients(id)
-        ON DELETE RESTRICT
+      ON DELETE CASCADE
         ON UPDATE CASCADE,
 
     CONSTRAINT fk_appointment_doctor
         FOREIGN KEY (doctor_id)
         REFERENCES doctors(id)
-        ON DELETE RESTRICT
+      ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
@@ -59,12 +59,12 @@ CREATE TABLE IF NOT EXISTS bills (
   CONSTRAINT fk_bill_patient
     FOREIGN KEY (patient_id)
     REFERENCES patients(id)
-    ON DELETE RESTRICT
+    ON DELETE CASCADE
     ON UPDATE CASCADE,
 
   CONSTRAINT fk_bill_appointment
     FOREIGN KEY (appointment_id)
     REFERENCES appointments(id)
-    ON DELETE RESTRICT
+    ON DELETE CASCADE
     ON UPDATE CASCADE
 );

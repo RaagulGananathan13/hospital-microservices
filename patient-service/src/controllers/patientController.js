@@ -1,5 +1,6 @@
 
 const patientModel = require('../models/patientModel');
+const pool = require('../config/db');
 
 const getAllPatients = async (req, res) => {
   try {
@@ -44,12 +45,29 @@ const updatePatient = async (req, res) => {
 };
 
 const deletePatient = async (req, res) => {
+  const patientId = Number(req.params.id);
+  const connection = await pool.getConnection();
+
   try {
-    const deleted = await patientModel.remove(req.params.id);
-    if (!deleted) return res.status(404).json({ success: false, message: 'Patient not found' });
+    await connection.beginTransaction();
+
+    // Delete dependent bills and appointments first so deletion works even with RESTRICT FKs.
+    await connection.query('DELETE FROM bills WHERE patient_id = ?', [patientId]);
+    await connection.query('DELETE FROM appointments WHERE patient_id = ?', [patientId]);
+
+    const [result] = await connection.query('DELETE FROM patients WHERE id = ?', [patientId]);
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    await connection.commit();
     res.status(200).json({ success: true, message: 'Patient deleted successfully' });
   } catch (error) {
+    await connection.rollback();
     res.status(500).json({ success: false, message: error.message });
+  } finally {
+    connection.release();
   }
 };
 

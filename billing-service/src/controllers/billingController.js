@@ -49,16 +49,16 @@ const createBill = async (req, res) => {
       });
     }
 
-    // Check appointment exists
+    // Check appointment exists and belongs to the given patient
     const [appointmentRows] = await pool.query(
-      'SELECT id FROM appointments WHERE id = ?',
-      [appointment_id]
+      'SELECT id FROM appointments WHERE id = ? AND patient_id = ?',
+      [appointment_id, patient_id]
     );
 
     if (appointmentRows.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid appointment_id. Appointment does not exist.'
+        message: 'Invalid appointment_id. Appointment does not exist for the given patient.'
       });
     }
 
